@@ -610,9 +610,18 @@ function setMode(){
 }
 mq.addEventListener('change', setMode);
 
-/* ── 预加载 ── */
-PAGES.forEach(p=>{ const i = new Image(); i.src = p.src; });
-$('#printall').innerHTML = PAGES.map(p=>'<img src="' + p.src + '" alt="' + p.name + '">').join('');
+/* ── 预加载：首屏先不动带宽，load 后按序补图（国内访问 GH Pages 带宽有限）── */
+window.addEventListener('load', ()=>{
+  let i = 1;
+  const step = ()=>{
+    if(i >= PAGES.length) return;
+    const im = new Image();
+    im.onload = im.onerror = ()=>{ i++; setTimeout(step, 260); };
+    im.src = PAGES[i].src;
+  };
+  setTimeout(step, 500);
+});
+$('#printall').innerHTML = PAGES.map(p=>'<img src="' + p.src + '" alt="' + p.name + '" loading="lazy" decoding="async">').join('');
 
 document.body.classList.toggle('single', !SPREAD);
 render(0, true);
