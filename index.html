@@ -245,7 +245,7 @@ body::before{
     <h2>目录</h2>
     <div class="sub">CONTENTS · 点击任意一页前往</div>
     <div class="toc" id="toc"></div>
-    <div class="hint">翻页：点底部箭头、键盘 ← → 空格、手机上左右滑动，或拖页面右下角翻页<br>看细节：点页面中间任意处放大，滚轮或双指缩放、拖拽移动、双击放大、Esc 退出<br>点页面左右两侧边缘可直接翻页</div>
+    <div class="hint">翻页：点底部箭头、键盘 ← → 空格、手机左右滑动，或点页面左右边缘（封面点一下即翻开）<br>看细节：点页面中间任意处放大，滚轮或双指缩放、拖拽移动、双击放大、Esc 退出</div>
     <div class="foot">黑塞作品图册 · 作者 · 作品 · 时代 · 主题 · 当代解读 &nbsp;|&nbsp; 仅供学习使用 · 制作者 Ariste</div>
   </div>
 </div>
@@ -379,17 +379,17 @@ function initFlip(){
     minWidth: MIN_W, maxWidth: MAX_W,       // MIN_W 同时是「单页 / 对开」的判定门槛
     minHeight: 240, maxHeight: 1400,
     drawShadow: true,
-    flippingTime: 780,
+    flippingTime: 600,                         // 与蝴蝶翅膀 R15 同档
     usePortrait: true,                        // 窄屏自动单页
     startZIndex: 0,
     autoSize: true,
-    maxShadowOpacity: 0.32,
-    showCover: true,                          // 封面单独成页（硬壳）
-    mobileScrollSupport: false,
-    swipeDistance: 45,
-    showPageCorners: true,                    // 可拖页角翻页
-    disableFlipByClick: false,                // 引擎内部 flipPrev 依赖此项为 false；点击由我们自己接管（见 capture 监听）
-    useMouseEvents: true
+    maxShadowOpacity: 0.5,                    // R15 同档，阴影更实、纸感更强
+    showCover: true,                          // 封面单独成页（见 SOFTWARE-NOTES 对比）
+    mobileScrollSupport: true,
+    swipeDistance: 70,
+    showPageCorners: false,                   // 鼠标事件关后该特效无效，避免死配置
+    disableFlipByClick: false,                // 引擎内部 flipPrev 依赖此项为 false（置 true 时竖屏回退静默失效）
+    useMouseEvents: false                     // ★ 关键：关掉引擎自己的鼠标/触摸手势，否则与我们的点击处理双触发（跳两页/翻页+弹放大）
   });
   pageFlip.loadFromHTML(bookEl.querySelectorAll('.book-page'));
   window.pageFlip = pageFlip;                       // 调试/维护用句柄
@@ -478,18 +478,36 @@ $('#tclose').addEventListener('click', ()=>closeToc());
 function closeToc(){ overlay.classList.remove('on'); }
 overlay.addEventListener('click', e=>{ if(e.target === overlay) closeToc(); });
 
-/* ── 点页面：中间放大，左右边缘翻页（capture 阶段拦截，兼负责阻止引擎的点击翻页）── */
+/* ── 点击页面：中间放大、两侧翻页、封面任意处翻到第一页 ──
+   引擎自己的鼠标/触摸手势已关（useMouseEvents:false），所以这里不会双触发。── */
 stageEl.addEventListener('click', e=>{
-  e.stopPropagation();
   const pg = e.target.closest('.book-page');
   if(!pg) return;
+  const idx = parseInt(pg.dataset.idx, 10);
   const r = pg.getBoundingClientRect();
   const rel = (e.clientX - r.left) / r.width;
-  if(rel < 0.16){ step(-1); return; }
-  if(rel > 0.84){ step(1); return; }
-  const idx = parseInt(pg.dataset.idx, 10);
-  if(idx < TOTAL) openViewer(idx);
-}, true);
+  if(idx === 0){ step(1); return; }                       // 封面：点哪都是「翻开」
+  if(rel < 0.2){ step(-1); return; }                      // 左边缘：上一页
+  if(rel > 0.8){ step(1); return; }                       // 右边缘：下一页
+  if(idx < TOTAL) openViewer(idx);                        // 中间：放大阅读
+});
+
+/* ── 触摸滑动翻页（引擎手势关了，自己补）── */
+let tx0 = 0, ty0 = 0, tt0 = 0;
+stageEl.addEventListener('touchstart', e=>{
+  if(e.touches.length !== 1) return;
+  tx0 = e.touches[0].clientX; ty0 = e.touches[0].clientY; tt0 = Date.now();
+}, {passive:true});
+stageEl.addEventListener('touchend', e=>{
+  const t = e.changedTouches[0];
+  if(!t) return;
+  const dx = t.clientX - tx0, dy = t.clientY - ty0, dt = Date.now() - tt0;
+  if(dt > 800) return;
+  if(Math.abs(dx) > 45 && Math.abs(dy) < Math.abs(dx) * 0.9){   // 横向滑动
+    e.preventDefault();
+    step(dx < 0 ? 1 : -1);
+  }
+}, {passive:false});
 
 /* ── 键盘 ── */
 document.addEventListener('keydown', e=>{
