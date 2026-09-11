@@ -53,7 +53,7 @@ body::before{
   padding:8px 15px;cursor:pointer;transition:background .25s,border-color .25s;min-height:34px;
 }
 .tool:hover{background:rgba(240,232,216,.14);border-color:rgba(240,232,216,.34)}
-.tool:focus-visible,.nav:focus-visible,.thumb:focus-visible,.dot:focus-visible{outline:2px solid var(--paper);outline-offset:2px}
+.tool:focus-visible,.nav:focus-visible,.dot:focus-visible{outline:2px solid var(--paper);outline-offset:2px}
 
 /* ── 舞台 ── */
 .stage{
@@ -92,17 +92,6 @@ body::before{
   padding:8px clamp(10px,3vw,30px) calc(12px + var(--safe-b));
   display:flex;flex-direction:column;gap:10px;align-items:center;
 }
-.thumbs{display:flex;gap:7px;max-width:100%;overflow-x:auto;padding:4px 2px 6px;scrollbar-width:none}
-.thumbs::-webkit-scrollbar{display:none}
-.thumb{
-  flex:0 0 auto;width:30px;height:42px;border-radius:2px;overflow:hidden;cursor:pointer;
-  border:1px solid rgba(240,232,216,.2);background:var(--paper-deep);opacity:.62;
-  transition:opacity .3s,border-color .3s,transform .3s;padding:0;
-}
-.thumb img{width:100%;height:100%;object-fit:cover;display:block}
-.thumb.vp{display:flex;align-items:center;justify-content:center;font-size:11px;letter-spacing:.2em;color:rgba(42,38,32,.6);font-family:inherit}
-.thumb:hover{opacity:.9}
-.thumb.on{opacity:1;border-color:rgba(240,232,216,.85);transform:translateY(-2px)}
 .controls{display:flex;align-items:center;gap:clamp(16px,3.2vw,32px)}
 .nav{
   width:40px;height:40px;border-radius:50%;cursor:pointer;
@@ -182,7 +171,7 @@ body::before{
 /* 手机竖屏 */
 @media (max-width:600px){
   .brand small{display:none}
-  .thumb{width:26px;height:36px}
+  .dot{width:9px;height:9px}
   .nav{width:44px;height:44px;font-size:17px}
   .pageno{min-width:74px;font-size:11px}
   .credit{font-size:10px;letter-spacing:.12em}
@@ -190,7 +179,7 @@ body::before{
 }
 /* 小平板 */
 @media (min-width:601px) and (max-width:900px){
-  .thumb{width:28px;height:39px}
+  .dot{width:10px;height:10px}
 }
 /* 桌面：顶栏更松、提示更全 */
 @media (min-width:1200px){
@@ -204,7 +193,6 @@ body::before{
   .brand small{display:none}
   .tool{padding:5px 11px;font-size:11.5px;min-height:28px}
   .stage{padding:0 6px}
-  .thumbs{display:none}
   .bottombar{flex-direction:row;align-items:center;justify-content:center;gap:10px;padding:2px 10px calc(4px + var(--safe-b));position:relative}
   .nav{width:32px;height:32px;font-size:15px}
   .pageno{min-width:58px;font-size:10px}
@@ -230,7 +218,6 @@ body::before{
 </div>
 
 <div class="bottombar">
-  <div class="thumbs" id="thumbs" aria-label="页面缩略图"></div>
   <div class="controls">
     <button class="nav" id="btnPrev" aria-label="上一页">‹</button>
     <div class="dots" id="dots"></div>
@@ -418,7 +405,6 @@ function label(){
 }
 function render(){
   document.querySelectorAll('.dot').forEach((d,i)=>d.classList.toggle('on', i === cur));
-  document.querySelectorAll('.thumb').forEach((t,i)=>t.classList.toggle('on', i === cur));
   const span = isLandscape() ? 2 : 1;                  // 对开一次走两页
   const atEnd = cur + span > COUNT - 1;
   $('#btnPrev').disabled = cur <= 0;
@@ -429,21 +415,13 @@ function render(){
 }
 
 /* 底部导航 */
-const thumbsEl = $('#thumbs'), dotsEl = $('#dots');
+const dotsEl = $('#dots');
 for(let i = 0; i < COUNT; i++){
   const d = document.createElement('button');
   d.className = 'dot'; d.type = 'button';
   d.setAttribute('aria-label', i === 0 ? '前往封面' : '前往第 ' + i + ' 页');
   d.addEventListener('click', ()=>jump(i));
   dotsEl.appendChild(d);
-
-  const b = document.createElement('button');
-  b.type = 'button'; b.className = 'thumb';
-  b.title = i === LAST ? '版本页' : PAGES[i].name;
-  b.innerHTML = i === LAST ? '<span class="vp">版本</span>'
-                           : '<img src="' + PAGES[i].thumb + '" alt="' + PAGES[i].name + '">';
-  b.addEventListener('click', ()=>jump(i));
-  thumbsEl.appendChild(b);
 }
 /* 目录 */
 const tocEl = $('#toc');
